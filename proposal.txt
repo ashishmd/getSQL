@@ -1,0 +1,11 @@
+Requirements:
+  1. Table to store the table names
+  2. Table to store the column name, type, foreing keys values.
+  3. Some storage where we can generate a graph and store paths -- (how to get data from a column)
+  4. Make it as a web-app
+
+Stack:
+  Python
+  MySQL
+  NoSQL (ElasticSearch)
+  
