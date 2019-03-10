@@ -2,3 +2,4 @@
 /venv
 /getSQL/__pycache__
 /app/__pycache__
+*.pyc
