@@ -9,3 +9,15 @@ def index(request):
 def welcome(request):
     return render(request, "welcome.html")
 
+
+def connection(request):
+    from django.db import connections
+    from django.db.utils import OperationalError
+    db_conn = connections['default']
+    try:
+        c = db_conn.cursor()
+    except OperationalError:
+        return HttpResponse("Connection failed")
+    else:
+        return HttpResponse("Connection success")
+
