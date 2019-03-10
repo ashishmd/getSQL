@@ -1,2 +1,4 @@
 /.idea
 /venv
+/getSQL/__pycache__
+/app/__pycache__
