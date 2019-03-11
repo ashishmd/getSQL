@@ -1,6 +1,6 @@
-Table Name
-contacts
-contact_sales_Accounts
-sales_accounts
-deals
-leads
+Table Name,Alias
+contacts,Contact
+contact_sales_Accounts,Contact Account Association
+sales_accounts,Accounts
+deals,Deals
+leads,Leads
