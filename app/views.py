@@ -1,5 +1,7 @@
 from django.http import HttpResponse
 from django.shortcuts import render
+import mysql.connector
+from mysql.connector import errorcode
 
 
 def index(request):
@@ -11,13 +13,16 @@ def welcome(request):
 
 
 def connection(request):
-    from django.db import connections
-    from django.db.utils import OperationalError
-    db_conn = connections['default']
     try:
-        c = db_conn.cursor()
-    except OperationalError:
-        return HttpResponse("Connection failed")
+        cnx = mysql.connector.connect(user='root', database='freshsales_dev')
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            return HttpResponse("Something is wrong with your user name or password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            return HttpResponse("Database does not exist")
+        else:
+            return HttpResponse(err)
     else:
-        return HttpResponse("Connection success")
+        return HttpResponse("Connection Success. Database Exist")
+        cnx.close()
 
