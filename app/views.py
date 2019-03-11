@@ -23,6 +23,11 @@ def connection(request):
         else:
             return HttpResponse(err)
     else:
-        return HttpResponse("Connection Success. Database Exist")
         cnx.close()
+        return HttpResponse("Connection Success. Database Exist")
+
+
+def migrate_tables(request):
+    from app.utils.import_export.importer import import_tables
+    return HttpResponse(import_tables())
 
