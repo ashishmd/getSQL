@@ -9,6 +9,7 @@ Create a db with name get_sql
 Run these commands:
 
 1. pip3 install mysql-connector-python
+2. pip3 install mysqlclient
 
 
 Run - python3 manage.py migrate
