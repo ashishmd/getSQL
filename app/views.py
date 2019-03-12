@@ -2,18 +2,21 @@ from django.http import HttpResponse
 from django.shortcuts import render
 import mysql.connector
 from mysql.connector import errorcode
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views import generic
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 
 
-def index(request):
-    return HttpResponse("Welcome to getSQl")
-
-
+@login_required(login_url='/login/')
 def welcome(request):
     return render(request, "welcome.html")
 
 
 # Below method will check if mysql connection is working fine or not.
 # It will check for db, and if found, will return success message.
+@login_required(login_url='/login/')
 def connection(request):
     try:
         cnx = mysql.connector.connect(user='root', database='get_sql')
@@ -30,6 +33,7 @@ def connection(request):
 
 
 # Below method will import data to table app_tables
+@user_passes_test(lambda u: u.is_superuser, login_url='/login')
 def migrate_tables(request):
     from app.utils.import_export import importer
     return HttpResponse(importer.import_tables())
@@ -43,3 +47,8 @@ def reinit_db(request):
         return HttpResponse("Success. Deleted all tables")
     else:
         return HttpResponse("Failed. Couldn't delete tables.")
+
+class SignUp(generic.CreateView):
+    form_class = UserCreationForm
+    success_url = reverse_lazy('login')
+    template_name = 'signup.html'
