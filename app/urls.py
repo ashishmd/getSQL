@@ -6,5 +6,6 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('welcome', views.welcome, name='welcome'),
     path('connection', views.connection, name='connection'),
-    path('migrate_tables', views.migrate_tables, name='connection')
+    path('migrate_tables', views.migrate_tables, name='migrate_tables'),
+    path('reinit_db', views.reinit_db, name='reinit_db')
 ]

@@ -28,6 +28,13 @@ def connection(request):
 
 
 def migrate_tables(request):
-    from app.utils.import_export.importer import import_tables
-    return HttpResponse(import_tables())
+    from app.utils.import_export import importer
+    return HttpResponse(importer.import_tables())
 
+
+def reinit_db(request):
+    from app.utils.sql import reinit_db
+    if reinit_db.delete_all_tables():
+        return HttpResponse("Success. Deleted all tables")
+    else:
+        return HttpResponse("Failed. Couldn't delete tables.")
