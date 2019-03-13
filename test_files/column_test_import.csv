@@ -8,11 +8,11 @@ deals,name,,,,
 deals,sales_account_id,,,id,sales_accounts
 sales_accounts,id,1,1,,
 sales_accounts,name,,,,
-sales_accounts,industry_type_id,,,id,industry_type
-contact_sales_acccounts,id,1,,,
-contact_sales_acccounts,contact_id,,,id,contacts
-contact_sales_acccounts,sales_account_id,,,id,sales_accounts
-contact_sales_acccounts,is_primary,,,,
+sales_accounts,industry_type_id,,,id,industry_types
+contact_sales_accounts,id,1,,,
+contact_sales_accounts,contact_id,,,id,contacts
+contact_sales_accounts,sales_account_id,,,id,sales_accounts
+contact_sales_accounts,is_primary,,,,
 contact_deal_associations,id,1,1,,
 contact_deal_associations,contact_id,,,id,contacts
 contact_deal_associations,deal_id,,,id,deals
