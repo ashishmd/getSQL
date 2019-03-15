@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import errorcode
 from test_files.test_csv_read import read_file
-
+import pdb; pdb.set_trace()
 
 FILE_PATH = "test.csv"
 
@@ -21,6 +21,7 @@ def create_connection():
 
 
 def main():
+    test = 1234
     create_connection()
     table_names = read_file(FILE_PATH)
 
