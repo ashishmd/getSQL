@@ -16,7 +16,7 @@ def welcome(request):
 # It will check for db, and if found, will return success message.
 def connection(request):
     try:
-        cnx = mysql.connector.connect(user='root', database='get_sql')
+        cnx = mysql.connector.connect(user='root', database='get_sql', password='Healthy@123')
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             return HttpResponse("Something is wrong with your user name or password")
@@ -33,6 +33,10 @@ def connection(request):
 def migrate_tables(request):
     from app.utils.import_export import importer
     return HttpResponse(importer.import_tables())
+
+def migrate_columns(request):
+    from app.utils.import_export import importer
+    return HttpResponse(importer.import_columns())
 
 
 # below method will be used to delete all tables in the current DB.
