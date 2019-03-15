@@ -1,9 +1,11 @@
 from app.utils.import_export import read_csv
 from app.models import Tables
 from app.models import Columns
+from app.models import Relations
 
 TABLE_FILE_PATH = "test_files/test.csv"
 COLUMN_FILE_PATH = "test_files/column_test_import.csv"
+RELATION_FILE_PATH = "test_files/relation.csv"
 
 # @todo : currently we are importing test file. Later we will implement upload option.
 def import_tables():
@@ -30,3 +32,14 @@ def import_columns():
 
         column_data.save()
     return "Import was success for columns."
+
+
+def import_relations():
+    data = read_csv.read_table_names(RELATION_FILE_PATH)
+    for row in data:
+        table_1_id = Tables.objects.get(table_name=row["table_1"]).id
+        table_2_id = Tables.objects.get(table_name=row["table_2"]).id
+        link_table_id = Tables.objects.get(table_name=row["link_table"]).id if row["link_table"] else None
+        relation = Relations(table_1_id=table_1_id, table_2_id=table_2_id, link_table=link_table_id, type=row["type"])
+        relation.save()
+    return "Relation import was success."
