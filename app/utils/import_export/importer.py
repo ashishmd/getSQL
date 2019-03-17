@@ -4,20 +4,16 @@ from app.utils.import_export import read_csv
 from app.models import Tables
 from app.models import Columns
 
-
 TABLE_FILE_PATH = "test_files/test.csv"
 COLUMN_FILE_PATH = "test_files/column_test_import.csv"
-
 
 # @todo : currently we are importing test file. Later we will implement upload option.
 def import_tables():
 
-    table_names = read_csv.read_table_names(TABLE_FILE_PATH)
     for table in table_names:
         table_data = Tables(table_name=table["Table Name"], alias=table["Alias"])
         table_data.save()
     return "Import was success."
-
 
 def import_columns():
     column_names = read_csv.read_table_names(COLUMN_FILE_PATH)
@@ -33,5 +29,6 @@ def import_columns():
         foreign_key_column_id = Columns.objects.get(column_name=row["foreign_key_column_name"], table_id=foreign_key_table_id).id
         column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=row["is_primary"],
                               is_indexed=row["is_indexed"],foreign_key_table_id=foreign_key_table_id, foreign_key_column_id=foreign_key_column_id)
+
         column_data.save()
     return "Import was success for columns."
