@@ -22,7 +22,7 @@ def create_connection():
 
 def main():
     create_connection()
-    table_names = read_file(FILE_PATH)
+
 
 
 if __name__ == '__main__':
