@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.utils.import_export import read_csv
 from app.models import Tables
 from app.models import Columns
