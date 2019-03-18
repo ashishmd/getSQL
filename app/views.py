@@ -16,7 +16,7 @@ def welcome(request):
 # It will check for db, and if found, will return success message.
 def connection(request):
     try:
-        cnx = mysql.connector.connect(user='root', database='get_sql', password='Healthy@123')
+        cnx = mysql.connector.connect(user='root', database='get_sql', password='')
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             return HttpResponse("Something is wrong with your user name or password")
