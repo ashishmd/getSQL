@@ -6,4 +6,3 @@ class Relations(models.Model):
     table_1_id = models.IntegerField()
     table_2_id = models.IntegerField()
     type = models.IntegerField()
-    link_table = models.IntegerField(null=True)

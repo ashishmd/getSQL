@@ -1,3 +1,4 @@
+from app.utils import constants
 from app.utils.import_export import read_csv
 from app.models import Tables
 from app.models import Columns
@@ -39,7 +40,6 @@ def import_relations():
     for row in data:
         table_1_id = Tables.objects.get(table_name=row["table_1"]).id
         table_2_id = Tables.objects.get(table_name=row["table_2"]).id
-        link_table_id = Tables.objects.get(table_name=row["link_table"]).id if row["link_table"] else None
-        relation = Relations(table_1_id=table_1_id, table_2_id=table_2_id, link_table=link_table_id, type=row["type"])
+        relation = Relations(table_1_id=table_1_id, table_2_id=table_2_id, type=constants.TABLE_MAPPING[row["type"]])
         relation.save()
     return "Relation import was success."
