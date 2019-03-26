@@ -3,6 +3,7 @@ from app.utils.import_export import read_csv
 from app.models import Tables
 from app.models import Columns
 from app.models import Relations
+from app.utils import list_util
 
 TABLE_FILE_PATH = "test_files/test.csv"
 COLUMN_FILE_PATH = "test_files/column_test_import.csv"
@@ -15,6 +16,7 @@ def import_tables():
         table_data = Tables(table_name=table["Table Name"], alias=table["Alias"])
         table_data.save()
     return "Import was success."
+
 
 def import_columns():
     column_names = read_csv.read_table_names(COLUMN_FILE_PATH)
@@ -43,3 +45,62 @@ def import_relations():
         relation = Relations(table_1_id=table_1_id, table_2_id=table_2_id, type=constants.TABLE_MAPPING[row["type"]])
         relation.save()
     return "Relation import was success."
+
+
+relations = Relations.objects.all()
+
+def create_path():
+    tables = Tables.objects.all()
+    result = list_util.get_values_from_query_set(tables, 'id')
+
+    for source in result:
+        for destination in result:
+            if destination == source:
+                continue
+            print("\n\npath from ", source, " to ", destination)
+            root = Tree()
+            root.data = source
+            visited_ids = [root.data]
+            iterate_path(root, destination, visited_ids)
+
+    return "Path created."
+
+
+path_list = []
+
+
+def iterate_path(root, destination, visited_ids):
+    required_relations = relations.filter(table_1_id=root.data)
+    child_ids = list_util.get_values_from_query_set(required_relations, 'table_2_id')
+    for id in visited_ids:
+        if id in child_ids:
+            child_ids.remove(id)
+
+    if len(child_ids) == 0:
+        return
+
+    for id in child_ids:
+        child = Tree()
+        child.parent = root
+        child.data = id
+        if id == destination:
+            calculate_path(child)
+            print(path_list)
+            path_list.clear()
+        else:
+            visited_ids.append(child.data)
+            iterate_path(child, destination, visited_ids)
+            visited_ids.remove(child.data)
+
+
+def calculate_path(root):
+    if root.parent is not None:
+        calculate_path(root.parent)
+    path_list.append(root.data)
+
+
+class Tree:
+    def __init__(self):
+        self.parent = None
+        self.data = None
+

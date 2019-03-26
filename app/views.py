@@ -43,6 +43,10 @@ def migrate_relations(request):
     return HttpResponse(importer.import_relations())
 
 
+def migrate_path(request):
+    return HttpResponse(importer.create_path())
+
+
 # below method will be used to delete all tables in the current DB.
 # run migrate task after doing below operation
 def reinit_db(request):
