@@ -1,0 +1,9 @@
+table_1,table_2,type,link_table
+contacts,sales_accounts,3,contact_sales_accounts
+contacts,deals,3,contact_deal_associations
+contacts,contact_sales_accounts,2,
+contact_sales_accounts,contacts,1,
+contact_sales_accounts,sales_accounts,1,
+sales_accounts,contact_sales_accounts,2,
+sales_accounts,deals,2,
+sales_accounts,industry_types,1,

@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 import mysql.connector
 from mysql.connector import errorcode
+from app.utils.import_export import importer
 
 
 def index(request):
@@ -31,12 +32,15 @@ def connection(request):
 
 # Below method will import data to table app_tables
 def migrate_tables(request):
-    from app.utils.import_export import importer
     return HttpResponse(importer.import_tables())
 
+
 def migrate_columns(request):
-    from app.utils.import_export import importer
     return HttpResponse(importer.import_columns())
+
+
+def migrate_relations(request):
+    return HttpResponse(importer.import_relations())
 
 
 # below method will be used to delete all tables in the current DB.
