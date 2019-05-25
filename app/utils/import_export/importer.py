@@ -3,11 +3,13 @@ from app.utils.import_export import read_csv
 from app.models import Tables
 from app.models import Columns
 from app.models import Relations
+from app.models import Path
 from app.utils import list_util
 
 TABLE_FILE_PATH = "test_files/test.csv"
 COLUMN_FILE_PATH = "test_files/column_test_import.csv"
 RELATION_FILE_PATH = "test_files/relation.csv"
+
 
 # @todo : currently we are importing test file. Later we will implement upload option.
 def import_tables():
@@ -48,8 +50,13 @@ def import_relations():
 
 
 relations = Relations.objects.all()
+path_flow = []
+paths = []
+
 
 def create_path():
+    global path_flow
+    global paths
     tables = Tables.objects.all()
     result = list_util.get_values_from_query_set(tables, 'id')
 
@@ -63,13 +70,22 @@ def create_path():
             visited_ids = [root.data]
             iterate_path(root, destination, visited_ids)
 
+            # storing the path in DB
+            if paths:
+                # storing the paths in a sorted manner based on length.
+                sorted_paths = sorted(paths, key=lambda path: len(path))
+                path_row = Path(base_table_id=source, final_table_id=destination, is_direct=False, path=sorted_paths)
+                path_row.save()
+
+            # clearing path variable for next iteration
+            paths = []
+
     return "Path created."
 
 
-path_list = []
-
-
 def iterate_path(root, destination, visited_ids):
+    global path_flow
+    global paths
     required_relations = relations.filter(table_1_id=root.data)
     child_ids = list_util.get_values_from_query_set(required_relations, 'table_2_id')
     for id in visited_ids:
@@ -85,8 +101,9 @@ def iterate_path(root, destination, visited_ids):
         child.data = id
         if id == destination:
             calculate_path(child)
-            print(path_list)
-            path_list.clear()
+            paths.append(path_flow)
+            print(path_flow)
+            path_flow = []
         else:
             visited_ids.append(child.data)
             iterate_path(child, destination, visited_ids)
@@ -94,9 +111,10 @@ def iterate_path(root, destination, visited_ids):
 
 
 def calculate_path(root):
+    global path_flow
     if root.parent is not None:
         calculate_path(root.parent)
-    path_list.append(root.data)
+    path_flow.append(root.data)
 
 
 class Tree:
