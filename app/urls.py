@@ -9,5 +9,6 @@ urlpatterns = [
     path('migrate_tables', views.migrate_tables, name='migrate_tables'),
     path('migrate_columns', views.migrate_columns, name='migrate_columns'),
     path('migrate_relations', views.migrate_relations, name='migrate_relations'),
-    path('reinit_db', views.reinit_db, name='reinit_db')
+    path('reinit_db', views.reinit_db, name='reinit_db'),
+    path('migrate_path', views.migrate_path, name='migrate_path')
 ]
