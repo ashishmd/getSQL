@@ -26,14 +26,18 @@ def import_columns():
     with_foreign = [x for x in column_names if x["foreign_key_table_name"]]
     for row in without_foreign:
         table_id = Tables.objects.get(table_name=row["table_name"]).id
-        column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=row["is_primary"], is_indexed=row["is_indexed"])
+        is_primary = True if row["is_primary"] else False
+        is_indexed = True if row["is_indexed"] else False
+        column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=is_primary, is_indexed=is_indexed)
         column_data.save()
     for row in with_foreign:
         table_id = Tables.objects.get(table_name=row["table_name"]).id
+        is_primary = True if row["is_primary"] else False
+        is_indexed = True if row["is_indexed"] else False
         foreign_key_table_id = Tables.objects.get(table_name=row["foreign_key_table_name"]).id
         foreign_key_column_id = Columns.objects.get(column_name=row["foreign_key_column_name"], table_id=foreign_key_table_id).id
-        column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=row["is_primary"],
-                              is_indexed=row["is_indexed"],foreign_key_table_id=foreign_key_table_id, foreign_key_column_id=foreign_key_column_id)
+        column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=is_primary,
+                              is_indexed=is_indexed,foreign_key_table_id=foreign_key_table_id, foreign_key_column_id=foreign_key_column_id)
 
         column_data.save()
     return "Import was success for columns."
