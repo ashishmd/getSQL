@@ -12,7 +12,7 @@ def create_query(request_data):
         select_data -> list of columns to be added in SELECT substring of query
         where_conditions -> params sent in request
         validated_condition_data -> validated version of where_conditions
-    :param request_data:
+    :param request_data: JSONString in the request
     :return: final set of queries.
     """
     select_fields = request_data['select_fields']
@@ -57,10 +57,10 @@ def validate_where_condition(condition, key, hash_data, table_ids):
     Also we have a array of table_ids to keep track of all tables required to generate path.
         We will add value to it if a new table is found in condition
     :param condition:
-    :param key:
-    :param hash_data:
+    :param key: primary_value or secondary_value of condition
+    :param hash_data: formatted / validated form of param - condition
     :param table_ids:
-    :return: nil
+    :return: nil (we will be population values in hash_data and table_ids)
     """
     value = condition[key]
     array = value.split(".")
@@ -78,7 +78,7 @@ def build_query(select_data, table_ids, where_conditions):
     :param select_data:
     :param table_ids:
     :param where_conditions:
-    :return: queries
+    :return: list of queries
     """
     queries = []
     select_string = create_select_string(select_data)
