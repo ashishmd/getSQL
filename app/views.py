@@ -1,8 +1,11 @@
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import render
 import mysql.connector
+import json
 from mysql.connector import errorcode
 from app.utils.import_export import importer
+from app.api import generate_sql
 
 
 def index(request):
@@ -45,6 +48,11 @@ def migrate_relations(request):
 
 def migrate_path(request):
     return HttpResponse(importer.create_path())
+
+
+def generate_query(request):
+    request_data = json.loads(request.POST.get('JSONString'))
+    return JsonResponse({"data": generate_sql.create_query(request_data)})
 
 
 # below method will be used to delete all tables in the current DB.

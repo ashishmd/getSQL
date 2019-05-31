@@ -2,7 +2,6 @@ from django.db import models
 
 
 class Columns(models.Model):
-
     table_id= models.IntegerField()
     column_name = models.CharField(max_length=100)
     is_primary = models.BooleanField(default=0)
