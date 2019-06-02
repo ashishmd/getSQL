@@ -13,4 +13,41 @@ Requirements:
 * mysql-connector-python - 8.0.15     
 * mysqlclient - 1.4.2.post1
 
-## How to use will be updated soon. 
+## Usage:
+You will have to import data of your MySQL Database: 
+```
+1. Tables (Table Name, Alias)
+2. Columns (Column Name, Table Name, is_primary, is_indexed, Foreign Key Column Name, Foreign key Table Name)
+3. Relations (Table 1, Table 2, Relation type [has_one, belongs_to, has_many])
+```
+
+System will consume the JSONString as a param in API Request. 
+
+```python
+{
+  "select_fields": [ "Student.Name", "Student.*", "*"],
+  "where_condition": {
+    "values": [
+      {
+        "primary_value": "Student.Name",
+        "primary_type": "column",
+        "operator": "=",
+        "secondary_value": "John",
+        "secondary_type": "string",
+        "id": 1
+      },
+      {
+        "primary_value": "School.Name",
+        "primary_type": "column",
+        "operator": "=",
+        "secondary_value": "Hogwarts",
+        "secondary_type": "string",
+        "id": 1
+      }
+    ],
+    "condition": "and"
+  } 
+}
+```
+
+If all params are valid, System will generate a query by automatically making the `JOINS` and give you the resultant query. Based on the number of paths (flow of relationships from one table to others), you can get multiple queries in result.
