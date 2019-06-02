@@ -10,13 +10,14 @@ def create_query(request_data):
     variables used are:
         table_ids -> list of table ids which are present in the request. It will be used to get the path.
         select_data -> list of columns to be added in SELECT substring of query
-        where_conditions -> params sent in request
+        where_conditions -> params sent in request for where conditions
         validated_condition_data -> validated version of where_conditions
     :param request_data: JSONString in the request
     :return: final set of queries.
     """
     select_fields = request_data['select_fields']
     where_conditions = request_data['where_condition']['values']
+    where_condition_type = validate_where_condition_type(request_data['where_condition']['condition'])
     table_ids = []  # it will have the array of table ids that are used in the query.
     select_data = []  # it will have array of values of select columns
     for field in select_fields:
@@ -47,7 +48,7 @@ def create_query(request_data):
                 hash_data['secondary_type'] = condition['secondary_type']
         validated_condition_data.append(hash_data)
 
-    return build_query(select_data, table_ids, validated_condition_data)
+    return build_query(select_data, table_ids, validated_condition_data, where_condition_type)
 
 
 def validate_where_condition(condition, key, hash_data, table_ids):
@@ -71,19 +72,20 @@ def validate_where_condition(condition, key, hash_data, table_ids):
             table_ids.append(data[1])
 
 
-def build_query(select_data, table_ids, where_conditions):
+def build_query(select_data, table_ids, where_conditions, where_condition_type):
     """
     This is the abstracted method where we build the query.
     We will build one query each for a path fetched.
     :param select_data:
     :param table_ids:
     :param where_conditions:
+    :param where_condition_type: "AND" / "OR"
     :return: list of queries
     """
     queries = []
     select_string = create_select_string(select_data)
     table_paths, table_strings = create_table_string(table_ids)
-    where_string = crete_where_string(where_conditions)
+    where_string = crete_where_string(where_conditions, where_condition_type)
 
     for i in range(len(table_paths)):
         query = select_string + table_strings[i] + where_string + ";"
@@ -92,12 +94,13 @@ def build_query(select_data, table_ids, where_conditions):
     return queries
 
 
-def crete_where_string(where_conditions):
+def crete_where_string(where_conditions, where_condition_type):
     """
     This method create the WHERE Condition substring of the query.
     Handled case where conditions can be in 2 format. It can have either quotes around it or not.
         Eg. Select ... WHERE a = 'abc'  ||   Select ... WHERE a = 123
     :param where_conditions: it is hash of validated where conditions.
+    :param where_condition_type: "AND" / "OR"
     :return: WHERE condition.
     """
     string = " WHERE "
@@ -106,7 +109,7 @@ def crete_where_string(where_conditions):
         primary_value = "\'" + condition['primary_value'] + "\'" if condition['primary_type'] == 'string' else condition['primary_value']
         secondary_value = "\'" + condition['secondary_value'] + "\'" if condition['secondary_type'] == 'string' else condition['secondary_value']
         if not first:
-            string += " AND "
+            string += where_condition_type
         string += "" + primary_value + " " + condition['operator'] + " " + secondary_value
         first = False
     return string
@@ -148,7 +151,7 @@ def create_query_string_from_path(paths):
     Things to note.
         For has_one and has_many relations ships, foreign_key will be in secondary table
             Eg: School has_many Students. In this case Student table will have a school_id in it.
-        For belongs to case, foreign_key will be in primary table.
+        For belongs_to case, foreign_key will be in primary table.
             Eg: Student belongs_to School. Then Student table will have a school_id in it.
 
     Variables Used:
@@ -213,3 +216,19 @@ def validate_and_get_table_column(array):
             value = table_name + "." + column_name
             return [value, table_id]
     return []
+
+
+def validate_where_condition_type(condition_type):
+    """
+    @TODO: Ideally there should be a validator method to check all the API Params passed.
+    Validates the condition_type passed in API request.
+    :param condition_type:
+    :return: by default returned value will be AND.
+    """
+    if not condition_type:
+        return ' AND '
+    if condition_type.lower() == 'and':
+        return ' AND '
+    elif condition_type.lower() == 'or':
+        return ' OR '
+    return ' AND '
