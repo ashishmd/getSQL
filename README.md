@@ -25,27 +25,29 @@ System will consume the JSONString as a param in API Request.
 
 ```python
 {
-  "select_fields": [ "Student.Name", "Student.*", "*"],
-  "where_condition": {
-    "values": [
+  "select_fields": [ "Students.Name", "Students.*", "*"],
+  "where_conditions": {
+    "where_clauses": [
       {
-        "primary_value": "Student.Name",
+        "primary_value": "Students.JobTitle",
         "primary_type": "column",
         "operator": "=",
-        "secondary_value": "John",
+        "secondary_value": "CEO",
         "secondary_type": "string",
         "id": 1
       },
       {
-        "primary_value": "School.Name",
+        "primary_value": "Schools.Name",
         "primary_type": "column",
         "operator": "=",
-        "secondary_value": "Hogwarts",
+        "secondary_value": "CEO",
         "secondary_type": "string",
         "id": 1
       }
     ],
-    "condition": "and"
+    "where_clause_type": "or",
+    "skip_data_presence_check": false,
+    "skip_data_presence_tables": ["Students, Schools"]
   } 
 }
 ```
