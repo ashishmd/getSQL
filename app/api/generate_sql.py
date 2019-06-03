@@ -16,8 +16,8 @@ def create_query(request_data):
     :return: final set of queries.
     """
     select_fields = request_data['select_fields']
-    where_conditions = request_data['where_condition']['values']
-    where_condition_type = validate_where_condition_type(request_data['where_condition']['condition'])
+    where_conditions = request_data['where_conditions']['where_clauses']
+    where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type'])
     table_ids = []  # it will have the array of table ids that are used in the query.
     select_data = []  # it will have array of values of select columns
     for field in select_fields:
@@ -48,7 +48,18 @@ def create_query(request_data):
                 hash_data['secondary_type'] = condition['secondary_type']
         validated_condition_data.append(hash_data)
 
-    return build_query(select_data, table_ids, validated_condition_data, where_condition_type)
+    is_global_left_join = request_data['where_conditions']['skip_data_presence_check']
+    left_join_table_ids = []
+    if not is_global_left_join:
+        table_names = request_data['where_conditions']['skip_data_presence_tables']
+        for table_name in table_names:
+            table_id = validate_and_get_table_name(table_name)
+            if table_id not in left_join_table_ids:
+                left_join_table_ids.append(table_id)
+            if table_id not in table_ids:
+                table_ids.append(table_id)
+
+    return build_query(select_data, table_ids, validated_condition_data, where_condition_type, is_global_left_join, left_join_table_ids)
 
 
 def validate_where_condition(condition, key, hash_data, table_ids):
@@ -72,7 +83,7 @@ def validate_where_condition(condition, key, hash_data, table_ids):
             table_ids.append(data[1])
 
 
-def build_query(select_data, table_ids, where_conditions, where_condition_type):
+def build_query(select_data, table_ids, where_conditions, where_condition_type, is_global_left_join, left_join_table_ids):
     """
     This is the abstracted method where we build the query.
     We will build one query each for a path fetched.
@@ -80,11 +91,13 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type):
     :param table_ids:
     :param where_conditions:
     :param where_condition_type: "AND" / "OR"
+    :param is_global_left_join: whether to use LEFT JOINS or not.
+    :param left_join_table_ids: Tables for which we should use LEFT JOINS
     :return: list of queries
     """
     queries = []
     select_string = create_select_string(select_data)
-    table_paths, table_strings = create_table_string(table_ids)
+    table_paths, table_strings = create_table_string(table_ids, is_global_left_join, left_join_table_ids)
     where_string = crete_where_string(where_conditions, where_condition_type)
 
     for i in range(len(table_paths)):
@@ -122,13 +135,15 @@ def create_select_string(select_data):
     return string
 
 
-def create_table_string(table_ids):
+def create_table_string(table_ids, is_global_left_join, left_join_table_ids):
     """
     If table_ids length is 1, it means, Query has only one table. SO query can be like below example:
         Eg: Select * from School where School.Name = 'ABC'
     If more table_ids are present, we need to iterate all possible paths that include those tables. One thing to note
         here is that both start and end of the path should be a table_id from the list.
     :param table_ids: list of tables to be included in query
+    :param is_global_left_join: whether to use LEFT JOINS or not.
+    :param left_join_table_ids: Tables for which we should use LEFT JOINS
     :return: FORM substring of the query
     """
     if len(table_ids) == 1:
@@ -141,10 +156,10 @@ def create_table_string(table_ids):
         for path_row in all_paths:
             required_path += path_row.path
     required_paths = sorted([p for p in required_path if all(elem in p for elem in table_ids)],  key=lambda path: len(path))
-    return create_query_string_from_path(required_paths)
+    return create_query_string_from_path(required_paths, is_global_left_join, left_join_table_ids)
 
 
-def create_query_string_from_path(paths):
+def create_query_string_from_path(paths, is_global_left_join, left_join_table_ids):
     """
     This method create FROM part of the query.
     There can be multiple valid paths for given conditions.
@@ -158,6 +173,8 @@ def create_query_string_from_path(paths):
         formatted_paths -> we will convert List of table_ids to List of table_names
         query_string_list -> we will have different version of FROM substring as per paths.
     :param paths: array of valid paths available
+    :param is_global_left_join: whether to use LEFT JOINS or not.
+    :param left_join_table_ids: Tables for which we should use LEFT JOINS
     :return: FormattedPaths and Substring of FROM conditions.
     """
     formatted_path_list = []
@@ -165,8 +182,13 @@ def create_query_string_from_path(paths):
     for path in paths:
         formatted_path = []
         query_string = [" FROM "]
+        join_type = " INNER JOIN " if not is_global_left_join else " LEFT JOIN "
+        is_join_type_set = False
         previous_table_id = None
         for table_id in path:
+            if (not is_join_type_set) and (join_type == " INNER JOIN ") and (table_id in left_join_table_ids):
+                join_type = " LEFT JOIN "
+                is_join_type_set = True
             current_table_row = Tables.objects.get(id=table_id)
             formatted_path.append(current_table_row.table_name)
             if previous_table_id is not None:
@@ -179,7 +201,7 @@ def create_query_string_from_path(paths):
                 elif relation_row.type == 3:  # belongs_to
                     base_column = Columns.objects.get(table_id=previous_table_id, foreign_key_table_id=table_id)
                     final_column = Columns.objects.get(id=base_column.foreign_key_column_id)
-                string = " INNER JOIN " + current_table_row.table_name + " ON " + previous_table_row.table_name + "." + \
+                string = join_type + current_table_row.table_name + " ON " + previous_table_row.table_name + "." + \
                          base_column.column_name + " = " + current_table_row.table_name + "." + final_column.column_name
                 query_string.append(string)
                 previous_table_id = table_id
@@ -216,6 +238,21 @@ def validate_and_get_table_column(array):
             value = table_name + "." + column_name
             return [value, table_id]
     return []
+
+
+def validate_and_get_table_name(table_name):
+    """
+    This method validates Column data passed in request params.
+    @todo: Currently we are not throwing error if wrong data is passed. Need to work on it.
+    :param table_name: Camel case table name
+    :return: table_id
+    """
+    table_name = string_utils.convert_to_camel_case(table_name)
+
+    table_row = Tables.objects.filter(table_name=table_name).first()
+    if table_row:
+       return table_row.id
+    return None
 
 
 def validate_where_condition_type(condition_type):
