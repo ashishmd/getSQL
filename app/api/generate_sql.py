@@ -18,6 +18,7 @@ def create_query(request_data):
     select_fields = request_data['select_fields']
     where_conditions = request_data['where_conditions']['where_clauses']
     where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type'])
+    custom_conditions = request_data['where_conditions']['custom_conditions']
     table_ids = []  # it will have the array of table ids that are used in the query.
     select_data = []  # it will have array of values of select columns
     for field in select_fields:
@@ -59,7 +60,7 @@ def create_query(request_data):
             if table_id not in table_ids:
                 table_ids.append(table_id)
 
-    return build_query(select_data, table_ids, validated_condition_data, where_condition_type, is_global_left_join, left_join_table_ids)
+    return build_query(select_data, table_ids, validated_condition_data, where_condition_type, custom_conditions, is_global_left_join, left_join_table_ids)
 
 
 def validate_where_condition(condition, key, hash_data, table_ids):
@@ -83,7 +84,7 @@ def validate_where_condition(condition, key, hash_data, table_ids):
             table_ids.append(data[1])
 
 
-def build_query(select_data, table_ids, where_conditions, where_condition_type, is_global_left_join, left_join_table_ids):
+def build_query(select_data, table_ids, where_conditions, where_condition_type, custom_conditions, is_global_left_join, left_join_table_ids):
     """
     This is the abstracted method where we build the query.
     We will build one query each for a path fetched.
@@ -91,6 +92,7 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
     :param table_ids:
     :param where_conditions:
     :param where_condition_type: "AND" / "OR"
+    :param custom_conditions: String for customized and/or case for where clauses.
     :param is_global_left_join: whether to use LEFT JOINS or not.
     :param left_join_table_ids: Tables for which we should use LEFT JOINS
     :return: list of queries
@@ -98,7 +100,7 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
     queries = []
     select_string = create_select_string(select_data)
     table_paths, table_strings = create_table_string(table_ids, is_global_left_join, left_join_table_ids)
-    where_string = crete_where_string(where_conditions, where_condition_type)
+    where_string = crete_where_string(where_conditions, where_condition_type, custom_conditions)
 
     for i in range(len(table_paths)):
         query = select_string + table_strings[i] + where_string + ";"
@@ -107,16 +109,28 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
     return queries
 
 
-def crete_where_string(where_conditions, where_condition_type):
+def crete_where_string(where_conditions, where_condition_type, custom_conditions):
     """
     This method create the WHERE Condition substring of the query.
     Handled case where conditions can be in 2 format. It can have either quotes around it or not.
         Eg. Select ... WHERE a = 'abc'  ||   Select ... WHERE a = 123
     :param where_conditions: it is hash of validated where conditions.
     :param where_condition_type: "AND" / "OR"
+    :param custom_conditions: String for customized and/or case for where clauses.
     :return: WHERE condition.
     """
     string = " WHERE "
+
+    if where_condition_type == 'custom':
+        for condition in where_conditions:
+            primary_value = "\'" + condition['primary_value'] + "\'" if condition['primary_type'] == 'string' else condition['primary_value']
+            secondary_value = "\'" + condition['secondary_value'] + "\'" if condition['secondary_type'] == 'string' else condition['secondary_value']
+            where_string = "(" + primary_value + " " + condition['operator'] + " " + secondary_value + ")"
+            custom_conditions = custom_conditions.replace("#" + str(condition['id']), where_string)
+            custom_conditions = custom_conditions.replace(" and ", " AND ")
+            custom_conditions = custom_conditions.replace(" or ", " OR ")
+        return string + custom_conditions
+
     first = True
     for condition in where_conditions:
         primary_value = "\'" + condition['primary_value'] + "\'" if condition['primary_type'] == 'string' else condition['primary_value']
@@ -268,4 +282,15 @@ def validate_where_condition_type(condition_type):
         return ' AND '
     elif condition_type.lower() == 'or':
         return ' OR '
+    elif condition_type.lower() == 'custom':
+        return condition_type.lower()
     return ' AND '
+
+
+def validate_custom_conditions(condition_string):
+    """
+    @TODO: We should put a regex to check the condition sent in API like opening and closing braces etc.
+    :param condition_string:
+    :return:
+    """
+    return condition_string

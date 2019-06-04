@@ -9,9 +9,9 @@ This service gives the option to generate query as per requirement without inter
 Requirements:
 * Python - 3.7.2
 * Django - 2.17
-* django-mysql - 3.0.0.post1
+* django-mysql - 3.0.0
 * mysql-connector-python - 8.0.15     
-* mysqlclient - 1.4.2.post1
+* mysqlclient - 1.4.2
 
 ## Usage:
 You will have to import data of your MySQL Database: (Support will be added soon to import)
@@ -21,15 +21,21 @@ You will have to import data of your MySQL Database: (Support will be added soon
 3. Relations (Table 1, Table 2, Relation type [has_one, belongs_to, has_many])
 ```
 
-System will consume the JSONString as a param in API Request. 
-
-```python
-{
-  "select_fields": [ "Students.Name", "Students.*", "*"],
+### Generate SQL API Format:
+```buildoutcfg
+curl --request POST \
+  --url http://127.0.0.1:8000/generate_query \
+  --header 'authorization: Basic YXNoaXNobTphc2hpc2hAMTIz' \
+  --header 'content-type: multipart/form-data; boundary=---011000010111000001101001' \
+  --header 'cookie: csrftoken=54pjTJyOr4x36PqKRKlmYLhgwWcaFVm2IUSn5YpUNkUfBQjxLYXx4lQhYPLmuBK8; sessionid=fydp236dubrv48r550w0pk412qnftnt4' \
+  --header 'x-csrftoken: 54pjTJyOr4x36PqKRKlmYLhgwWcaFVm2IUSn5YpUNkUfBQjxLYXx4lQhYPLmuBK8' \
+  --cookie 'csrftoken=54pjTJyOr4x36PqKRKlmYLhgwWcaFVm2IUSn5YpUNkUfBQjxLYXx4lQhYPLmuBK8; sessionid=fydp236dubrv48r550w0pk412qnftnt4' \
+  --form 'JSONString={
+  "select_fields": [ "Contacts.Name", "Contacts.*", "*", "IndustryTypes.Name"],
   "where_conditions": {
     "where_clauses": [
-      {
-        "primary_value": "Students.JobTitle",
+    	{
+        "primary_value": "Contacts.Name",
         "primary_type": "column",
         "operator": "=",
         "secondary_value": "CEO",
@@ -37,21 +43,69 @@ System will consume the JSONString as a param in API Request.
         "id": 1
       },
       {
-        "primary_value": "Schools.Name",
+        "primary_value": "Contacts.JobTitle",
+        "primary_type": "column",
+        "operator": "=",
+        "secondary_value": "CEO",
+        "secondary_type": "string",
+        "id": 2
+      },
+      {
+        "primary_value": "SalesAccounts.Name",
+        "primary_type": "column",
+        "operator": "=",
+        "secondary_value": "CEO",
+        "secondary_type": "string",
+        "id": 3
+      }
+    ],
+    "where_clause_type": "custom",
+    "custom_conditions": "(#1 and #2 ) or #3",
+    "skip_data_presence_check": true,
+    "skip_data_presence_tables": ["SalesAccounts"]
+  } 
+}'
+```
+### Generate SQL API Params:
+System will consume the following JSONString as a param in API Request. 
+
+```python
+{
+  "select_fields": [ "Students.Name", "Students.*", "*", "IndustryTypes.Name"],
+  "where_conditions": {
+    "where_clauses": [
+    	{
+        "primary_value": "Students.Name",
         "primary_type": "column",
         "operator": "=",
         "secondary_value": "CEO",
         "secondary_type": "string",
         "id": 1
+      },
+      {
+        "primary_value": "Students.JobTitle",
+        "primary_type": "column",
+        "operator": "=",
+        "secondary_value": "CEO",
+        "secondary_type": "string",
+        "id": 2
+      },
+      {
+        "primary_value": "Schools.Name",
+        "primary_type": "column",
+        "operator": "=",
+        "secondary_value": "CEO",
+        "secondary_type": "string",
+        "id": 3
       }
     ],
-    "where_clause_type": "or",
-    "skip_data_presence_check": false,
-    "skip_data_presence_tables": ["Students, Schools"]
+    "where_clause_type": "custom",
+    "custom_conditions": "(#1 and #2 ) or #3",
+    "skip_data_presence_check": true,
+    "skip_data_presence_tables": ["Schools"]
   } 
 }
 ```
-### API Params:
 #### select_fields
 Array of columns that you want to get from DB. Columns should be in the format <table_name>.<column_name>
 #### where_conditions
@@ -61,8 +115,10 @@ primary_value , primary_type, operator, secondary_value, secondary_type.
 primary_value and secondary_value can be a column or value. Its type is specified in the repective type params.
 id param will be used once the custom where_clause_type is supported.
 #### where_clause_type
-Values can be "and" / "or". System will use it to append and / or conditions in where clause. 
-Soon "custom" value will be consumed, where you can specify id values of where clause in a format like "((1 and 2) or 3)"
+Values can be "and" / "or" / "custom". System will use it to append and / or conditions in all where clause.
+#### custom_conditions 
+To process custom where_conditions, pass where_clause_type as "custom". Then you can specify id values of where clause in a format like "((#1 and #2) or #3)"
+. Where condition will be formed as per the custom condition given.  
 #### skip_data_presence_check
 If this variable is set true, only LEFT JOINS will be used in the query. 
 #### skip_data_presence_tables
