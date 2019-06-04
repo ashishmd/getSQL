@@ -3,6 +3,7 @@ from app.models.column import Columns
 from app.models.path import Path
 from app.models.relation import Relations
 from app.utils import string_utils
+from app.utils import list_util
 
 
 def create_query(request_data):
@@ -19,46 +20,19 @@ def create_query(request_data):
     where_conditions = request_data['where_conditions']['where_clauses']
     where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type'])
     custom_conditions = request_data['where_conditions']['custom_conditions']
-    table_ids = []  # it will have the array of table ids that are used in the query.
-    select_data = []  # it will have array of values of select columns
-    for field in select_fields:
-        array = field.split(".")
-        if len(array) == 2:
-            data = validate_and_get_table_column(array)
-            if data:
-                if data[0] not in select_data:
-                    select_data.append(data[0])
-                if data[1] not in table_ids:
-                    table_ids.append(data[1])
-        elif len(array) == 1:
-            if array[0] == '*':
-                select_data.append('*')
 
-    select_data = sorted(select_data, key=lambda path: len(path))
+    table_ids = []  # initializing the array of table ids that are used in the query.
+    select_data = []  # initializing array of values of select columns
+    validated_condition_data = []  # initializing formatted value of where conditions.
+    left_join_table_ids = []  # initializing list of table_ids that need to be left joined in query
 
-    validated_condition_data = []
+    populate_select_data_and_table_ids(select_fields, select_data, table_ids)
 
-    for condition in where_conditions:
-        hash_data = {'primary_type': condition['primary_type'], 'operator': condition['operator'], 'id': condition['id']}
-        for key in ['primary_type', 'secondary_type']:
-            if condition[key] == 'column':
-                value_key = 'primary_value' if key == 'primary_type' else 'secondary_value'
-                validate_where_condition(condition, value_key, hash_data, table_ids)
-            else:
-                hash_data['secondary_value'] = condition['secondary_value']
-                hash_data['secondary_type'] = condition['secondary_type']
-        validated_condition_data.append(hash_data)
+    populate_validated_conditions_and_table_ids(where_conditions, validated_condition_data, table_ids)
 
     is_global_left_join = request_data['where_conditions']['skip_data_presence_check']
-    left_join_table_ids = []
     if not is_global_left_join:
-        table_names = request_data['where_conditions']['skip_data_presence_tables']
-        for table_name in table_names:
-            table_id = validate_and_get_table_name(table_name)
-            if table_id not in left_join_table_ids:
-                left_join_table_ids.append(table_id)
-            if table_id not in table_ids:
-                table_ids.append(table_id)
+        populate_left_join_table_ids(request_data, left_join_table_ids, table_ids)
 
     return build_query(select_data, table_ids, validated_condition_data, where_condition_type, custom_conditions, is_global_left_join, left_join_table_ids)
 
@@ -73,15 +47,14 @@ def validate_where_condition(condition, key, hash_data, table_ids):
     :param key: primary_value or secondary_value of condition
     :param hash_data: formatted / validated form of param - condition
     :param table_ids:
-    :return: nil (we will be population values in hash_data and table_ids)
+    :return: nil (we will be populating values in hash_data and table_ids)
     """
     value = condition[key]
     array = value.split(".")
-    data = validate_and_get_table_column(array)
-    if data:
-        hash_data[key] = data[0]
-        if data[1] not in table_ids:
-            table_ids.append(data[1])
+    table_column, table_id = validate_and_get_table_column(array)
+    if table_column:
+        hash_data[key] = table_column
+        list_util.append_to_list_with_check(table_id, table_ids)
 
 
 def build_query(select_data, table_ids, where_conditions, where_condition_type, custom_conditions, is_global_left_join, left_join_table_ids):
@@ -104,7 +77,7 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
 
     for i in range(len(table_paths)):
         query = select_string + table_strings[i] + where_string + ";"
-        hash_data = {'path': str(table_paths[i]),'query': query}
+        hash_data = {'path': str(table_paths[i]), 'query': query}
         queries.append(hash_data)
     return queries
 
@@ -208,6 +181,8 @@ def create_query_string_from_path(paths, is_global_left_join, left_join_table_id
             if previous_table_id is not None:
                 previous_table_row = Tables.objects.get(id=previous_table_id)
                 relation_row = Relations.objects.get(table_1_id=previous_table_id, table_2_id=table_id)
+                base_column = None
+                final_column = None
                 # @TODO: Currently relation type is hard coded below. We need to store it in the constants file and use it.
                 if relation_row.type in [1, 2]:  # has_one and has_many
                     final_column = Columns.objects.get(table_id=table_id, foreign_key_table_id=previous_table_id)
@@ -215,10 +190,11 @@ def create_query_string_from_path(paths, is_global_left_join, left_join_table_id
                 elif relation_row.type == 3:  # belongs_to
                     base_column = Columns.objects.get(table_id=previous_table_id, foreign_key_table_id=table_id)
                     final_column = Columns.objects.get(id=base_column.foreign_key_column_id)
-                string = join_type + current_table_row.table_name + " ON " + previous_table_row.table_name + "." + \
-                         base_column.column_name + " = " + current_table_row.table_name + "." + final_column.column_name
-                query_string.append(string)
-                previous_table_id = table_id
+                if base_column and final_column:
+                    string = join_type + current_table_row.table_name + " ON " + previous_table_row.table_name + "." + \
+                             base_column.column_name + " = " + current_table_row.table_name + "." + final_column.column_name
+                    query_string.append(string)
+                    previous_table_id = table_id
             else:
                 query_string.append(" " + current_table_row.table_name)
                 previous_table_id = table_id
@@ -251,7 +227,7 @@ def validate_and_get_table_column(array):
         elif column_name == '*':
             value = table_name + "." + column_name
             return [value, table_id]
-    return []
+    return [None, None]
 
 
 def validate_and_get_table_name(table_name):
@@ -265,7 +241,7 @@ def validate_and_get_table_name(table_name):
 
     table_row = Tables.objects.filter(table_name=table_name).first()
     if table_row:
-       return table_row.id
+        return table_row.id
     return None
 
 
@@ -294,3 +270,69 @@ def validate_custom_conditions(condition_string):
     :return:
     """
     return condition_string
+
+
+def populate_select_data_and_table_ids(select_fields, select_data, table_ids):
+    """
+    This is a part of code which is moved to a method for better readability.
+    This method will iterate select_fields from request and populate select_data.
+    This method also populate table_ids list with tables used in select data.
+    :param select_fields: param value from request
+    :param select_data: validated and formatted list of select columns to be used in query
+    :param table_ids: list of table_ids used in query
+    :return: None
+    """
+    for field in select_fields:
+        array = field.split(".")
+        if len(array) == 2:
+            table_column, table_id = validate_and_get_table_column(array)
+            if table_column:
+                list_util.append_to_list_with_check(table_column, select_data)
+                list_util.append_to_list_with_check(table_id, table_ids)
+        elif len(array) == 1:
+            if array[0] == '*' and array[0] not in select_data:
+                # Note: '*' should always be in the first position in the query.
+                if not select_data:
+                    select_data.append('*')
+                else:
+                    old_value = select_data[0]
+                    select_data[0] = '*'
+                    select_data.append(old_value)
+
+
+def populate_validated_conditions_and_table_ids(where_conditions, validated_condition_data, table_ids):
+    """
+    This is a part of code which is moved to a method for better readability.
+    This method will iterate where conditions, validate it and store it in a different hash.
+    This method also populate table_ids list with tables used in where conditions.
+    :param where_conditions: param value from request
+    :param validated_condition_data: validated and formatted list of where clauses to be used in query.
+    :param table_ids: list of table_ids used in query
+    :return: None
+    """
+    for condition in where_conditions:
+        hash_data = {'primary_type': condition['primary_type'], 'operator': condition['operator'], 'id': condition['id']}
+        for key in ['primary_type', 'secondary_type']:
+            if condition[key] == 'column':
+                value_key = 'primary_value' if key == 'primary_type' else 'secondary_value'
+                validate_where_condition(condition, value_key, hash_data, table_ids)
+            else:
+                hash_data['secondary_value'] = condition['secondary_value']
+                hash_data['secondary_type'] = condition['secondary_type']
+        validated_condition_data.append(hash_data)
+
+
+def populate_left_join_table_ids(request_data, left_join_table_ids, table_ids):
+    """
+    This is a part of code which is moved to a method for better readability.
+    This method iterates tables given for left join, validates it and add its id to a list for later use.
+    :param request_data: request param
+    :param left_join_table_ids: list of tables that need to be left joined
+    :param table_ids: list of table_ids used in query.
+    :return: None
+    """
+    table_names = request_data['where_conditions']['skip_data_presence_tables']
+    for table_name in table_names:
+        table_id = validate_and_get_table_name(table_name)
+        list_util.append_to_list_with_check(table_id, left_join_table_ids)
+        list_util.append_to_list_with_check(table_id, table_ids)
