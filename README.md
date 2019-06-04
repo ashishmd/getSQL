@@ -14,7 +14,7 @@ Requirements:
 * mysqlclient - 1.4.2.post1
 
 ## Usage:
-You will have to import data of your MySQL Database: 
+You will have to import data of your MySQL Database: (Support will be added soon to import)
 ```
 1. Tables (Table Name, Alias)
 2. Columns (Column Name, Table Name, is_primary, is_indexed, Foreign Key Column Name, Foreign key Table Name)
@@ -51,5 +51,22 @@ System will consume the JSONString as a param in API Request.
   } 
 }
 ```
+### API Params:
+#### select_fields
+Array of columns that you want to get from DB. Columns should be in the format <table_name>.<column_name>
+#### where_conditions
+It contains where_clauses, where_clause_type, skip_data_presence_check, skip_data_presence_tables
+#### where_clauses
+primary_value , primary_type, operator, secondary_value, secondary_type.
+primary_value and secondary_value can be a column or value. Its type is specified in the repective type params.
+id param will be used once the custom where_clause_type is supported.
+#### where_clause_type
+Values can be "and" / "or". System will use it to append and / or conditions in where clause. 
+Soon "custom" value will be consumed, where you can specify id values of where clause in a format like "((1 and 2) or 3)"
+#### skip_data_presence_check
+If this variable is set true, only LEFT JOINS will be used in the query. 
+#### skip_data_presence_tables
+If skip_data_presence_check is set as false, you can specify tables for which you want to use left joins.
 
+### Result
 If all params are valid, System will generate a query by automatically making the `JOINS` and give you the resultant query. Based on the number of paths (flow of relationships from one table to others), you can get multiple queries in result.
