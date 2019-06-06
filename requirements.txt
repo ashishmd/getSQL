@@ -1,7 +1,8 @@
-Django==2.1.7
+Django==2.2.2
 django-mysql==3.0.0.post1
 mysql-connector-python==8.0.15
 mysqlclient==1.4.2.post1
 protobuf==3.7.0
 pytz==2018.9
 six==1.12.0
+sqlparse==0.3.0
