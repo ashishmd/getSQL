@@ -77,7 +77,7 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
 
     for i in range(len(table_paths)):
         query = select_string + table_strings[i] + where_string + ";"
-        hash_data = {'path': str(table_paths[i]), 'query': query}
+        hash_data = {'path': str(table_paths[i]).replace(',', ' -> '), 'query': query}
         queries.append(hash_data)
     return queries
 
