@@ -17,7 +17,6 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('base_table_id', models.IntegerField()),
                 ('final_table_id', models.IntegerField()),
-                ('is_direct', models.BooleanField()),
                 ('path', django_mysql.models.JSONField(default=dict)),
             ],
             options={

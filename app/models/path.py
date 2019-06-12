@@ -6,6 +6,5 @@ from django_mysql.models import JSONField, Model
 class Path(Model):
     base_table_id = models.IntegerField()
     final_table_id = models.IntegerField()
-    is_direct = models.BooleanField()
     path = JSONField()
 

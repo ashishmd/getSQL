@@ -28,7 +28,7 @@ def import_columns():
         table_id = Tables.objects.get(table_name=row["table_name"]).id
         is_primary = True if row["is_primary"] else False
         is_indexed = True if row["is_indexed"] else False
-        column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=is_primary, is_indexed=is_indexed)
+        column_data = Columns(table_id=table_id, column_name=row["column_name"], column_alias=row["column_alias"], is_primary=is_primary, is_indexed=is_indexed)
         column_data.save()
     for row in with_foreign:
         table_id = Tables.objects.get(table_name=row["table_name"]).id
@@ -36,7 +36,7 @@ def import_columns():
         is_indexed = True if row["is_indexed"] else False
         foreign_key_table_id = Tables.objects.get(table_name=row["foreign_key_table_name"]).id
         foreign_key_column_id = Columns.objects.get(column_name=row["foreign_key_column_name"], table_id=foreign_key_table_id).id
-        column_data = Columns(table_id=table_id, column_name=row["column_name"], is_primary=is_primary,
+        column_data = Columns(table_id=table_id, column_name=row["column_name"], column_alias=row["column_alias"], is_primary=is_primary,
                               is_indexed=is_indexed,foreign_key_table_id=foreign_key_table_id, foreign_key_column_id=foreign_key_column_id)
 
         column_data.save()
@@ -78,7 +78,7 @@ def create_path():
             if paths:
                 # storing the paths in a sorted manner based on length.
                 sorted_paths = sorted(paths, key=lambda path: len(path))
-                path_row = Path(base_table_id=source, final_table_id=destination, is_direct=False, path=sorted_paths)
+                path_row = Path(base_table_id=source, final_table_id=destination, path=sorted_paths)
                 path_row.save()
 
             # clearing path variable for next iteration

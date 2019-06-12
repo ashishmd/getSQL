@@ -11,5 +11,6 @@ urlpatterns = [
     path('migrate_relations', views.migrate_relations, name='migrate_relations'),
     path('reinit_db', views.reinit_db, name='reinit_db'),
     path('migrate_path', views.migrate_path, name='migrate_path'),
+    path('migrate_all', views.migrate_all, name='migrate_all'),
     path('generate_query', views.generate_query, name='generate_query')
 ]

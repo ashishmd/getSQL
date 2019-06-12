@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('table_id', models.IntegerField()),
                 ('column_name', models.CharField(max_length=100)),
+                ('column_alias', models.CharField(max_length=100)),
                 ('is_primary', models.BooleanField(default=0)),
                 ('is_indexed', models.BooleanField(default=0)),
                 ('foreign_key_column_id', models.IntegerField(null=True)),
