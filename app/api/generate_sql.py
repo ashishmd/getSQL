@@ -17,14 +17,16 @@ def create_query(request_data):
     :return: final set of queries.
     """
     select_fields = request_data['select_fields']
-    where_conditions = None
-    where_condition_type = None
-    custom_conditions = None
+    where_conditions = request_data['where_conditions']['where_clauses'] if 'where_conditions' in request_data else None
+    where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type']
+                                                         if ('where_conditions' in request_data)
+                                                            and
+                                                            ('where_clause_type' in request_data['where_conditions'])
+                                                         else None
+                                                         )
 
-    if 'where_conditions' in request_data:
-        where_conditions = request_data['where_conditions']['where_clauses']
-        where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type'])
-        custom_conditions = request_data['where_conditions']['custom_conditions']
+    custom_conditions = request_data['where_conditions']['custom_conditions'] \
+        if ('where_conditions' in request_data) and ('custom_conditions' in request_data['where_conditions']) else None
 
     table_ids = []  # initializing the array of table ids that are used in the query.
     select_data = []  # initializing array of values of select columns
@@ -35,11 +37,10 @@ def create_query(request_data):
     populate_validated_conditions_and_table_ids(where_conditions, validated_condition_data, table_ids)
 
     left_join_table_ids = []  # initializing list of table_ids that need to be left joined in query
-    is_global_left_join = False
-    if 'where_conditions' in request_data:
-        is_global_left_join = request_data['where_conditions']['skip_data_presence_check']
-        if not is_global_left_join:
-            populate_left_join_table_ids(request_data, left_join_table_ids, table_ids)
+    is_global_left_join = request_data['where_conditions']['skip_data_presence_check'] \
+            if ('where_conditions' in request_data) and ('skip_data_presence_check' in request_data['where_conditions']) else False
+    if not is_global_left_join:
+        populate_left_join_table_ids(request_data, left_join_table_ids, table_ids)
 
     return build_query(select_data, table_ids, validated_condition_data, where_condition_type, custom_conditions, is_global_left_join, left_join_table_ids)
 
@@ -83,7 +84,7 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
     where_string = crete_where_string(where_conditions, where_condition_type, custom_conditions)
 
     if not table_paths:
-        return select_string + table_strings + ";"
+        return {'query': select_string + table_strings + where_string + ";"}
     for i in range(len(table_paths)):
         query = select_string + table_strings[i] + where_string + ";"
         hash_data = {'path': str(table_paths[i]).replace(',', ' -> '), 'query': query}
@@ -101,9 +102,12 @@ def crete_where_string(where_conditions, where_condition_type, custom_conditions
     :param custom_conditions: String for customized and/or case for where clauses.
     :return: WHERE condition.
     """
+    if not where_conditions:
+        return ""
+
     string = " WHERE "
 
-    if where_condition_type == 'custom':
+    if where_condition_type == 'custom' and custom_conditions:
         for condition in where_conditions:
             primary_value = "\'" + condition['primary_value'] + "\'" if condition['primary_type'] == 'string' else condition['primary_value']
             secondary_value = "\'" + condition['secondary_value'] + "\'" if condition['secondary_type'] == 'string' else condition['secondary_value']
@@ -344,7 +348,8 @@ def populate_left_join_table_ids(request_data, left_join_table_ids, table_ids):
     :param table_ids: list of table_ids used in query.
     :return: None
     """
-    table_names = request_data['where_conditions']['skip_data_presence_tables']
+    table_names = request_data['where_conditions']['skip_data_presence_tables'] \
+        if ('where_conditions' in request_data) and ('skip_data_presence_check' in request_data['where_conditions']) else []
     for table_name in table_names:
         table_id = validate_and_get_table_name(table_name)
         list_util.append_to_list_with_check(table_id, left_join_table_ids)
