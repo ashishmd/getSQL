@@ -50,6 +50,11 @@ def migrate_path(request):
     return HttpResponse(importer.create_path())
 
 
+def migrate_all(request):
+    return HttpResponse(importer.import_tables() + importer.import_columns() + importer.import_relations() +
+                        importer.create_path())
+
+
 def generate_query(request):
     request_data = json.loads(request.POST.get('JSONString'))
     return JsonResponse({"data": generate_sql.create_query(request_data)})

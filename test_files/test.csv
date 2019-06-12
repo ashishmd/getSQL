@@ -1,7 +1,7 @@
 Table Name,Alias
 contacts,Contact
-contact_sales_accounts,Contact Account Association
-sales_accounts,Accounts
-deals,Deals
-contact_deal_associations,Leads
-industry_types,Industry
+contact_sales_accounts,ContactAccountAssociation
+sales_accounts,Account
+deals,Deal
+contact_deal_associations,Lead
+industry_types,IndustryType
