@@ -17,22 +17,29 @@ def create_query(request_data):
     :return: final set of queries.
     """
     select_fields = request_data['select_fields']
-    where_conditions = request_data['where_conditions']['where_clauses']
-    where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type'])
-    custom_conditions = request_data['where_conditions']['custom_conditions']
+    where_conditions = None
+    where_condition_type = None
+    custom_conditions = None
+
+    if 'where_conditions' in request_data:
+        where_conditions = request_data['where_conditions']['where_clauses']
+        where_condition_type = validate_where_condition_type(request_data['where_conditions']['where_clause_type'])
+        custom_conditions = request_data['where_conditions']['custom_conditions']
 
     table_ids = []  # initializing the array of table ids that are used in the query.
     select_data = []  # initializing array of values of select columns
-    validated_condition_data = []  # initializing formatted value of where conditions.
-    left_join_table_ids = []  # initializing list of table_ids that need to be left joined in query
 
     populate_select_data_and_table_ids(select_fields, select_data, table_ids)
 
+    validated_condition_data = []  # initializing formatted value of where conditions.
     populate_validated_conditions_and_table_ids(where_conditions, validated_condition_data, table_ids)
 
-    is_global_left_join = request_data['where_conditions']['skip_data_presence_check']
-    if not is_global_left_join:
-        populate_left_join_table_ids(request_data, left_join_table_ids, table_ids)
+    left_join_table_ids = []  # initializing list of table_ids that need to be left joined in query
+    is_global_left_join = False
+    if 'where_conditions' in request_data:
+        is_global_left_join = request_data['where_conditions']['skip_data_presence_check']
+        if not is_global_left_join:
+            populate_left_join_table_ids(request_data, left_join_table_ids, table_ids)
 
     return build_query(select_data, table_ids, validated_condition_data, where_condition_type, custom_conditions, is_global_left_join, left_join_table_ids)
 
@@ -75,6 +82,8 @@ def build_query(select_data, table_ids, where_conditions, where_condition_type, 
     table_paths, table_strings = create_table_string(table_ids, is_global_left_join, left_join_table_ids)
     where_string = crete_where_string(where_conditions, where_condition_type, custom_conditions)
 
+    if not table_paths:
+        return select_string + table_strings + ";"
     for i in range(len(table_paths)):
         query = select_string + table_strings[i] + where_string + ";"
         hash_data = {'path': str(table_paths[i]).replace(',', ' -> '), 'query': query}
@@ -136,7 +145,7 @@ def create_table_string(table_ids, is_global_left_join, left_join_table_ids):
     if len(table_ids) == 1:
         string = " FROM "
         string += Tables.objects.get(id=table_ids[0]).table_name
-        return [string]
+        return [[], string]
     else:
         required_path = []
         all_paths = Path.objects.filter(base_table_id__in=table_ids, final_table_id__in=table_ids)
@@ -215,18 +224,22 @@ def validate_and_get_table_column(array):
     :return: array of column_name and table_id will be the return value.
                 Format [<table.column_name>, table_id]
     """
-    table_name = string_utils.convert_to_camel_case(array[0])
-    column_name = string_utils.convert_to_camel_case(array[1])
+    table_name, column_name = array
 
-    table_row = Tables.objects.filter(table_name=table_name).first()
+    table_row = Tables.objects.filter(alias=table_name).first()
     if table_row:
         table_id = table_row.id
-        if Columns.objects.filter(column_name=column_name, table_id=table_id).first():
-            value = table_name + "." + column_name
+        column_row = Columns.objects.filter(column_alias=column_name, table_id=table_id).first()
+        if column_row:
+            value = table_row.table_name + "." + column_row.column_name
             return [value, table_id]
         elif column_name == '*':
-            value = table_name + "." + column_name
+            value = table_row.table_name + "." + column_name
             return [value, table_id]
+        else:
+            raise ValueError('Invalid Column Name Passed: ' + column_name)
+    else:
+        raise ValueError('Invalid Table Name Passed: ' + table_name)
     return [None, None]
 
 
@@ -237,12 +250,10 @@ def validate_and_get_table_name(table_name):
     :param table_name: Camel case table name
     :return: table_id
     """
-    table_name = string_utils.convert_to_camel_case(table_name)
-
-    table_row = Tables.objects.filter(table_name=table_name).first()
+    table_row = Tables.objects.filter(alias=table_name).first()
     if table_row:
         return table_row.id
-    return None
+    raise ValueError('Invalid Table Name Passed: ' + table_name)
 
 
 def validate_where_condition_type(condition_type):
@@ -310,6 +321,8 @@ def populate_validated_conditions_and_table_ids(where_conditions, validated_cond
     :param table_ids: list of table_ids used in query
     :return: None
     """
+    if not where_conditions:
+        return
     for condition in where_conditions:
         hash_data = {'primary_type': condition['primary_type'], 'operator': condition['operator'], 'id': condition['id']}
         for key in ['primary_type', 'secondary_type']:
