@@ -1,8 +1,8 @@
-Django==2.2.8
-django-mysql==3.0.0.post1
-mysql-connector-python==8.0.15
-mysqlclient==1.4.2.post1
-protobuf==3.7.0
-pytz==2018.9
-six==1.12.0
-sqlparse==0.3.0
+Django==3.1.1
+django-mysql==3.8.1
+mysql-connector-python==8.0.21
+mysqlclient==2.0.1
+protobuf==3.6.1
+pytz==2019.3
+six==1.14.0
+sqlparse==0.3.1
