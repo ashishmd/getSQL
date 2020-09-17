@@ -87,8 +87,8 @@ DATABASES = {
         'NAME': 'get_sql',
         'HOST': '127.0.0.1',
         'PORT': '3306',
-        'USER': 'root',
-        'PASSWORD': '',
+        'USER': 'debian-sys-maint',
+        'PASSWORD': 'QmGEiB00heGLFYjj',
     }
 }
 

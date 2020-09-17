@@ -215,17 +215,18 @@ def validate_and_get_table_column(array):
     :return: array of column_name and table_id will be the return value.
                 Format [<table.column_name>, table_id]
     """
-    table_name = string_utils.convert_to_camel_case(array[0])
-    column_name = string_utils.convert_to_camel_case(array[1])
+    table_name = array[0]
+    column_name = array[1]
 
-    table_row = Tables.objects.filter(table_name=table_name).first()
+    table_row = Tables.objects.filter(alias=table_name).first()
     if table_row:
         table_id = table_row.id
-        if Columns.objects.filter(column_name=column_name, table_id=table_id).first():
-            value = table_name + "." + column_name
+        column_row = Columns.objects.filter(column_alias=column_name, table_id=table_id).first()
+        if column_row:
+            value = table_row.table_name + "." + column_row.column_name
             return [value, table_id]
         elif column_name == '*':
-            value = table_name + "." + column_name
+            value = table_row.table_name + "." + column_name
             return [value, table_id]
     return [None, None]
 
