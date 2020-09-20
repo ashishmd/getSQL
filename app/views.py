@@ -9,7 +9,7 @@ from app.api import generate_sql
 
 
 def index(request):
-    return HttpResponse("Welcome to getSQl")
+    return render(request, "index.html")
 
 
 def welcome(request):
