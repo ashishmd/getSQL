@@ -8,10 +8,14 @@ This service gives the option to generate query as per requirement without inter
 
 Requirements:
 * Python - 3.7.2
-* Django - 2.17
-* django-mysql - 3.0.0
-* mysql-connector-python - 8.0.15     
-* mysqlclient - 1.4.2
+* Django==3.1.1
+* django-mysql==3.8.1
+* mysql-connector-python==8.0.21
+* mysqlclient==2.0.1
+* protobuf==3.6.1
+* pytz==2019.3
+* six==1.14.0
+* sqlparse==0.3.1
 
 ## Usage:
 You will have to import data of your MySQL Database: (Support will be added soon to import)
